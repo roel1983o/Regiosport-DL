@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DL regiosport codefixer</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<div class="container">
+  <h1>DL regiosport codefixer</h1>
+
+  <section class="card">
+    <h2>Uitslagen amateursport voetbal</h2>
+    <p>Upload het ingevulde Excelbestand (.xlsx). Klik daarna op de knop hieronder. Je krijgt dan een txt-bestand dat je in CUE moet plakken.</p>
+    <div class="row">
+      <input id="voetbal-file" type="file" accept=".xlsx" />
+    </div>
+    <div class="row actions">
+      <button class="primary" onclick="make('voetbal')">Maak CUE export (.txt)</button>
+      <a class="ghost" href="/download/template/voetbal">Download leeg invulbestand (.xlsx)</a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Uitslagen amateursport overig</h2>
+    <p>Upload het ingevulde Excelbestand (.xlsx). Klik daarna op de knop hieronder. Je krijgt dan een txt-bestand dat je in CUE moet plakken.</p>
+    <div class="row">
+      <input id="overig-file" type="file" accept=".xlsx" />
+    </div>
+    <div class="row actions">
+      <button class="primary" onclick="make('overig')">Maak CUE export (.txt)</button>
+      <a class="ghost" href="/download/template/overig">Download leeg invulbestand (.xlsx)</a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Resultaat</h2>
+    <div id="preview" class="preview" spellcheck="false"></div>
+    <div class="row actions">
+      <a id="dl-link" class="ghost" href="#" style="display:none;">cue_*.txt</a>
+      <button id="copy-btn" class="secondary" style="display:none;" onclick="copyPreview()">Kopieer</button>
+    </div>
+  </section>
+
+  <footer>
+    <a href="/health">status</a>
+  </footer>
+</div>
+
+<script>
+async function make(kind){
+  const input = document.getElementById(kind + "-file");
+  if(!input.files || input.files.length === 0){
+    alert("Kies eerst een Excelbestand (.xlsx).");
+    return;
+  }
+  const fd = new FormData();
+  fd.append("kind", kind);
+  fd.append("file", input.files[0]);
+
+  const preview = document.getElementById("preview");
+  const dl = document.getElementById("dl-link");
+  const copyBtn = document.getElementById("copy-btn");
+  preview.textContent = "Bezig met verwerken…";
+  dl.style.display = "none";
+  copyBtn.style.display = "none";
+
+  const resp = await fetch("/api/make", { method: "POST", body: fd });
+  const data = await resp.json();
+  if(!data.ok){
+    preview.textContent = "Fout: " + (data.error || "onbekend");
+    return;
+  }
+  preview.textContent = data.preview || "";
+  dl.href = data.download;
+  dl.textContent = data.download.split("/").pop();
+  dl.style.display = "inline-block";
+  copyBtn.style.display = "inline-block";
+}
+function copyPreview(){
+  const t = document.getElementById("preview").textContent;
+  navigator.clipboard.writeText(t).then(()=> { alert("Gekopieerd!"); });
+}
+</script>
+</body>
+</html>
